@@ -1,709 +1,191 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2023 FriendlyElec Computer Tech. Co., Ltd.
+ * (http://www.friendlyelec.com)
+ */
+
 /dts-v1/;
-
-#include "rk3399-9tripod.dtsi"
-#include "rk3399-linux.dtsi"
-#include <dt-bindings/input/input.h>
-
-//#include "lcd-mipi1024x600-WY070ML.dtsi" //7 inch mipi 1024x600
-//#include "lcd-edp2560x1600-LTL101DL03.dtsi" //10.1 inch edp 2560x1600
-//#include "lcd-edpToLvds1280x800-EJ101IA.dtsi" //10.1 inch edp 1280x800
-
+#include "rk3399.dtsi"
+#include "rk3399-opp.dtsi"
 
 / {
-	model = "Rockchip RK3399 9tripod Board (Linux Opensource)";
-	compatible = "rockchip,rk3399-9tripod-linux", "rockchip,rk3399";
+	model = "X3399 Linux Board";
+	compatible = "x3399,linux", "rockchip,rk3399";
 
-	fiq_debugger: fiq-debugger {
-		compatible = "rockchip,fiq-debugger";
-		rockchip,serial-id = <2>;
-		rockchip,signal-irq = <182>;
-		rockchip,wake-irq = <0>;
-		rockchip,irq-mode-enable = <1>;  /* If enable uart uses irq instead of fiq */
-		rockchip,baudrate = <115200>;  /* Only 115200 and 1500000 */
-		pinctrl-names = "default";
-		pinctrl-0 = <&uart2c_xfer>;
+	chosen {
+		stdout-path = "serial2:1500000n8";
 	};
 
-/*
-	vcc_lcd: vcc-lcd {
-		compatible = "regulator-fixed";
-		regulator-name = "vcc_lcd";
-		gpio = <&gpio4 30 GPIO_ACTIVE_HIGH>;
-		startup-delay-us = <20000>;
-		enable-active-high;
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		regulator-boot-on;
-		vin-supply = <&vcc5v0_sys>;
-	};*/
-
-	gpio_keys: gpio-keys {
-		compatible = "gpio-keys";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		autorepeat;
-
-		pinctrl-names = "default";
-		pinctrl-0 = <&pwrbtn>;
-
-		button@0 {
-			gpios = <&gpio0 5 GPIO_ACTIVE_LOW>;
-			linux,code = <KEY_POWER>;
-			label = "GPIO Key Power";
-			linux,input-type = <1>;
-			gpio-key,wakeup = <1>;
-			debounce-interval = <100>;
-		};
+	aliases {
+		ethernet0 = &gmac0;
+		serial2 = &uart2;
 	};
 
-	adc_keys: adc-keys {
-		compatible = "adc-keys";
-		io-channels = <&saradc 1>;
-		io-channel-names = "buttons";
-		poll-interval = <100>;
-		keyup-threshold-microvolt = <1800000>;
-
-		esc-key {
-			linux,code = <KEY_ESC>;
-			label = "esc";
-			press-threshold-microvolt = <1310000>;
-		};
-
-		menu-key {
-			linux,code = <KEY_MENU>;
-			label = "menu";
-			press-threshold-microvolt = <987000>;
-		};
-
-		vol-down-key {
-			linux,code = <KEY_VOLUMEDOWN>;
-			label = "volume down";
-			press-threshold-microvolt = <300000>;
-		};
-
-		vol-up-key {
-			linux,code = <KEY_VOLUMEUP>;
-			label = "volume up";
-			press-threshold-microvolt = <17000>;
-		};
-	};
-
-	vccadc_ref: vccadc-ref {
-		compatible = "regulator-fixed";
-		regulator-name = "vcc1v8_sys";
-		regulator-always-on;
-		regulator-boot-on;
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-	};
-
-	ext_cam_clk: external-camera-clock {
-		compatible = "fixed-clock";
-		clock-frequency = <27000000>;
-		clock-output-names = "CLK_CAMERA_27MHZ";
-		#clock-cells = <0>;
+	memory@00000000 {
+		device_type = "memory";
+		reg = <0x0 0x0 0x0 0x80000000>;
 	};
 
 	leds {
 		compatible = "gpio-leds";
+		pinctrl-names = "default";
+		pinctrl-0 = <&led_act_pin>;
 
-		led@1 {
-			pinctrl-names = "default";
-			pinctrl-0 = <&led1_ctl>;
-			label = "led1";
-			gpios = <&gpio1 23 GPIO_ACTIVE_LOW>;
+		led-act {
+			label = "x3399:green:act";
+			gpios = <&gpio0 13 GPIO_ACTIVE_HIGH>;
 			linux,default-trigger = "heartbeat";
-			default-state = "off";
+			default-state = "on";
 		};
+	};
 
-		led@2 {
-			pinctrl-names = "default";
-			pinctrl-0 = <&led2_ctl>;
-			label = "led2";
+	gpio-keys {
+		compatible = "gpio-keys";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pwr_key_pin>;
+
+		power {
+			label = "power";
 			gpios = <&gpio0 12 GPIO_ACTIVE_LOW>;
-			default-state = "off";
-		};
-
-		led@3 {
-			pinctrl-names = "default";
-			pinctrl-0 = <&led3_ctl>;
-			label = "led3";
-			gpios = <&gpio1 1 GPIO_ACTIVE_LOW>;
-			default-state = "off";
-		};
-
-		led@4 {
-			pinctrl-names = "default";
-			pinctrl-0 = <&led4_ctl>;
-			label = "led4";
-			gpios = <&gpio0 8 GPIO_ACTIVE_LOW>;
-			default-state = "off";
-		};
-	};
-    
-    xgpio_4d5_rs485_3a {
-		compatible = "9tripod,xgpio";
-		pinctrl-names = "default";
-		pinctrl-0 = <&rs485_3a_4d5>;
-		gpio = <&gpio4 29 GPIO_ACTIVE_HIGH>;
-		def_val=<1>; 
-		status = "okay";
-	};
-	xgpio_4c5_rs485_4a {
-		compatible = "9tripod,xgpio";
-		pinctrl-names = "default";
-		pinctrl-0 = <&rs485_4a_4c5>;
-		gpio = <&gpio4 21 GPIO_ACTIVE_HIGH>; 
-		def_val=<1>;
-		status = "okay";
-	};
-	 
-	xgpio_relay1 {
-		compatible = "9tripod,xgpio";
-		pinctrl-names = "default";
-		pinctrl-0 = <&relay1_gpio>;
-		gpio = <&gpio2 7 GPIO_ACTIVE_HIGH>;
-		status = "okay";
-	};
-	xgpio_relay2 {
-		compatible = "9tripod,xgpio";
-		pinctrl-names = "default";
-		pinctrl-0 = <&relay2_gpio>;
-		gpio = <&gpio2 8 GPIO_ACTIVE_HIGH>;
-		status = "okay";
-	};
-	xgpio_fan {
-		compatible = "9tripod,xgpio";
-		pinctrl-names = "default";
-		pinctrl-0 = <&fan_gpio>;
-		gpio = <&gpio1 18 GPIO_ACTIVE_HIGH>;
-		status = "okay";
-	};
-	gpio2_a3 {
-		compatible = "9tripod,xgpio";
-		pinctrl-names = "default";
-		pinctrl-0 = <&gpio2a3>;
-		gpio = <&gpio2 3 GPIO_ACTIVE_HIGH>;//gpio2-b0
-		def_mode = <1>;//input
-		status = "okay";
-	};
-
-	gpio2_a4 {
-		compatible = "9tripod,xgpio";
-		pinctrl-names = "default";
-		pinctrl-0 = <&gpio2a4>;
-		gpio = <&gpio2 4 GPIO_ACTIVE_HIGH>;//gpio4-c6
-		def_mode = <1>;//input
-		status = "okay";
-	};
-
-	gpio2_a5{
-		compatible = "9tripod,xgpio";
-		pinctrl-names = "default";
-		pinctrl-0 = <&gpio2a5>;
-		gpio = <&gpio2 5 GPIO_ACTIVE_HIGH>;//gpio1-c7
-		def_mode = <1>;//input
-		status = "okay";
-	};
-	gpio2_a6{
-		compatible = "9tripod,xgpio";
-		pinctrl-names = "default";
-		pinctrl-0 = <&gpio2a6>;
-		gpio = <&gpio2 6 GPIO_ACTIVE_HIGH>;//gpio1-c7
-		def_mode = <1>;//input
-		status = "okay";
-	};
-    
-	
-	
-	xgpio_POWEN_3G {
-		compatible = "9tripod,xgpio";
-		pinctrl-names = "default";
-		pinctrl-0 = <&power3g_gpio>;
-		gpio = <&gpio1 13 GPIO_ACTIVE_HIGH>;
-		def_val= <0>;
-		power3g= <1>;
-		status = "okay";
-	};  
-	 RESET_4G{
-               compatible = "9tripod,xgpio";
-               pinctrl-names = "default";
-               pinctrl-0 = <&gpio2d4>;
-               gpio = <&gpio2 28 GPIO_ACTIVE_HIGH>;//gpio1-c7 
-               def_mode = <0>;//output
-               reset_4g = <1>;//
-			   def_val= <0>;   
-               status = "okay";
-       };
-	  POWERON_4G{
-              compatible = "9tripod,xgpio";
-               pinctrl-names = "default";
-               pinctrl-0 = <&gpio4d3>;
-               gpio = <&gpio4 27 GPIO_ACTIVE_HIGH>;//gpio1-c7 
-               def_mode = <0>;//output 
-               def_val= <1>;  
-			   poweron_4g = <1>;//
-               status = "okay"; 
-       };   
-       W_DISABLE1_4G{ 
-               compatible = "9tripod,xgpio";
-               pinctrl-names = "default";
-               pinctrl-0 = <&gpio0a2>;
-               gpio = <&gpio0 2 GPIO_ACTIVE_HIGH>;//gpio1-c7
-               def_mode = <0>;//input
-               def_val= <1>; 
-               status = "okay"; 
-};
-	test_power: test-power {
-		status = "okay";
-	};
-};
-
-&saradc {
-	vref-supply = <&vccadc_ref>;
-};
-
-&display_subsystem {
-	status = "okay";
-};
-
-&hdmi {
-	pinctrl-names = "default";
-	pinctrl-0 = <&hdmi_i2c_xfer>, <&hdmi_cec>;
-	#address-cells = <1>;
-	#size-cells = <0>;
-	#sound-dai-cells = <0>;
-	status = "okay";
-};
-
-&hdmi_in_vopl {
-	status = "okay";
-};
-
-&hdmi_in_vopb {
-	status = "disabled";
-};
-
-&route_hdmi {
-	status = "okay";
-};
-
-&hdmi_sound {
-	status = "okay";
-};
-
-&spi2 {
-	status = "okay";
-	max-freq = <48000000>;
-	
-	spi2_wk2xxx:spi2_wk2xxx@00 {
-	    status = "okay";
-		compatible = "wkmic,wk2124_spi2";
-		reg = <0x00>;
-		spi-max-frequency = <10000000>;
-		//spi-lsb-first; 
-		//poll_mode = <0>;
-		//type = <0>;
-		//enable_dma = <0>;
-		irq_gpio = <&gpio1 22 GPIO_ACTIVE_HIGH>;
-	};
-	/*
-	spi_test@20 {
-		compatible = "rockchip,spi_test_bus1_cs0";
-		reg = <0>;
-		spi-max-frequency = <24000000>;
-		status = "okay";
-	};*/	
-};
-
-&spi1 {
-	status = "okay";
-	max-freq = <48000000>; 
-	spi1_wk2xxx:spi1_wk2xxx@00 {
-		compatible = "wkmic,wk2124_spi1";
-		reg = <0>;
-		spi-max-frequency = <10000000>;
-		//spi-lsb-first;
-		//poll_mode = <0>;
-		//type = <0>;
-		//enable_dma = <0>;
-		irq_gpio = <&gpio1 20 GPIO_ACTIVE_HIGH>;
-	};	
-};
-
-&i2c1 {
-	status = "okay";
-	/*
-	rtc@51 {
-		compatible = "nxp,pcf8563";
-		reg = <0x51>;
-	};
-	*/
-	
-	hym8563: hym8563@51 {
-	compatible = "haoyu,hym8563";
-	reg = <0x51>;
-	//interrupts = <13 IRQ_TYPE_EDGE_FALLING>;
-	#clock-cells = <0>;
-	};
-
-	gsl3673: gsl3673@40 {
-		status = "disabled";
-		compatible = "GSL,GSL3673";
-		reg = <0x40>;
-		screen_max_x = <1536>;
-		screen_max_y = <2048>;
-		irq_gpio_number = <&gpio1 20 IRQ_TYPE_LEVEL_LOW>;
-		rst_gpio_number = <&gpio4 22 GPIO_ACTIVE_HIGH>;
-	};
-
-	tc358749x: tc358749x@f {
-		status = "disabled";
-		compatible = "toshiba,tc358749";
-		reg = <0xf>;
-		clocks = <&ext_cam_clk>;
-		clock-names = "refclk";
-		reset-gpios = <&gpio2 7 GPIO_ACTIVE_LOW>;
-		/* hardware irq-pin is dangling
-		 * connect it to other gpio then configurate follow interrupt
-		 * or del config just using software poll
-		 */
-		//interrupt-parent = <&gpio2>;
-		//interrupts = <12 IRQ_TYPE_LEVEL_LOW>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&hdmiin_gpios>;
-		rockchip,camera-module-index = <0>;
-		rockchip,camera-module-facing = "back";
-		rockchip,camera-module-name = "default";
-		rockchip,camera-module-lens-name = "default";
-		port {
-			hdmiin_out0: endpoint {
-				/* Unlinked mipi dphy rx0 */
-				//remote-endpoint = <&mipi_in_ucam0>;
-				data-lanes = <1 2 3 4>;
-				clock-noncontinuous;
-				link-frequencies =
-					/bits/ 64 <297000000>;
-			};
+			linux,code = <KEY_POWER>;
+			wakeup-source;
 		};
 	};
 
-	vm149c: vm149c@0c {
-		status = "okay";
-		compatible = "silicon touch,vm149c";
-		reg = <0x0c>;
-		rockchip,camera-module-index = <0>;
-		rockchip,camera-module-facing = "back";
+	usb20_host: usb20-host {
+		compatible = "usb-bus";
+		#address-cells = <1>;
+		#size-cells = <0>;
 	};
-     
-	ov13850: ov13850@10 {
-		status = "okay";
-		compatible = "ovti,ov13850";
-		reg = <0x10>;
-		clocks = <&cru SCLK_CIF_OUT>;
-		clock-names = "xvclk";
-		reset-gpios = <&gpio2 27 GPIO_ACTIVE_HIGH>;
-		pwdn-gpios = <&gpio2 28 GPIO_ACTIVE_HIGH>;
-		pinctrl-names = "rockchip,camera_default";
-		//pinctrl-0 = <&cif_clkout>;
-		rockchip,camera-module-index = <0>;
-		rockchip,camera-module-facing = "back";
-		rockchip,camera-module-name = "CMK-CT0116";
-		rockchip,camera-module-lens-name = "Largan-50013A1";
 
-		lens-focus = <&vm149c>;
-
-		port {
-			ucam_out0: endpoint {
-				remote-endpoint = <&mipi_in_ucam0>;
-				data-lanes = <1 2>;
-			};
-		};
+	usb30_host: usb30-host {
+		compatible = "usb-bus";
+		#address-cells = <1>;
+		#size-cells = <0>;
 	};
-};
 
-&i2c4 {
-	status = "okay";
+	vcc5v0_host: vcc5v0-host {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc5v0_host";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&gpio0 11 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+
+	vcc3v0_sd: vcc3v0-sd {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc3v0_sd";
+		regulator-min-microvolt = <3000000>;
+		regulator-max-microvolt = <3000000>;
+		gpio = <&gpio0 10 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+
+	vcc1v8_sd: vcc1v8-sd {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc1v8_sd";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		gpio = <&gpio0 9 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+
+	vcc3v0_sdio: vcc3v0-sdio {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc3v0_sdio";
+		regulator-min-microvolt = <3000000>;
+		regulator-max-microvolt = <3000000>;
+		gpio = <&gpio0 8 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+
+	vcc1v8_sdio: vcc1v8-sdio {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc1v8_sdio";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		gpio = <&gpio0 7 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+
+	vcc3v0_pcie: vcc3v0-pcie {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc3v0_pcie";
+		regulator-min-microvolt = <3000000>;
+		regulator-max-microvolt = <3000000>;
+		gpio = <&gpio0 6 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+
+	vcc1v8_pcie: vcc1v8-pcie {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc1v8_pcie";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		gpio = <&gpio0 5 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+
+	vcc3v0_hdmi: vcc3v0-hdmi {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc3v0_hdmi";
+		regulator-min-microvolt = <3000000>;
+		regulator-max-microvolt = <3000000>;
+		gpio = <&gpio0 4 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+
+	vcc1v8_hdmi: vcc1v8-hdmi {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc1v8_hdmi";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		gpio = <&gpio0 3 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+
+	vcc3v0_eth: vcc3v0-eth {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc3v0_eth";
+		regulator-min-microvolt = <3000000>;
+		regulator-max-microvolt = <3000000>;
+		gpio = <&gpio0 2 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+
+	vcc1v8_eth: vcc1v8-eth {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc1v8_eth";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		gpio = <&gpio0 1 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
 };
 
 &uart2 {
-	status = "disabled";
-};
-
-&vopb {
-	assigned-clocks = <&cru DCLK_VOP0_DIV>;
-	assigned-clock-parents = <&cru PLL_CPLL>;
 	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart2m0_xfer>;
 };
 
-&vopb_mmu {
+&gmac0 {
 	status = "okay";
-};
-
-&vopl {
-	assigned-clocks = <&cru DCLK_VOP0_DIV>;
-	assigned-clock-parents = <&cru PLL_CPLL>;
-	status = "okay";
-};
-
-&vopl_mmu {
-	status = "okay";
-};
-
-&pwm3 {
-	status = "okay";
-	interrupts = <GIC_SPI 61 IRQ_TYPE_LEVEL_HIGH 0>;
-	compatible = "rockchip,remotectl-pwm";
-	remote_pwm_id = <3>;
-	handle_cpu_id = <0>;
-
-	ir_key0 {
-		rockchip,usercode = <0xff40>;
-		rockchip,key_table =
-			<0xb2	KEY_POWER>,
-			<0xe5	KEY_HOME>,
-			<0xbd	KEY_BACK>,
-			<0xba	KEY_MENU>,
-			<0xf4	KEY_UP>,
-			<0xf1	KEY_DOWN>,
-			<0xef	KEY_LEFT>,
-			<0xee	KEY_RIGHT>,
-			<0xf2	KEY_ENTER>,
-			<0xf0	KEY_REPLY>,
-			<0xea	KEY_VOLUMEUP>,
-			<0xe3	KEY_VOLUMEDOWN>,
-			<0xbc	KEY_MUTE>,
-			<0xfe	KEY_1>,
-			<0xfd	KEY_2>,
-			<0xfc	KEY_3>,
-			<0xfb	KEY_4>,
-			<0xfa	KEY_5>,
-			<0xf9	KEY_6>,
-			<0xf8	KEY_7>,
-			<0xf7	KEY_8>,
-			<0xb6	KEY_9>,
-			<0xff	KEY_0>,
-			<0xed	KEY_BACKSPACE>,
-
-			<0xaf	KEY_POWER>,
-			<0x8b	KEY_VOLUMEUP>,
-			<0xb9	KEY_VOLUMEDOWN>;
-	};
-};
-
-&dmc {
-	status = "disabled";
-};
-
-&rkisp1_0 {
-	status = "okay";
-
-	port {
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		isp0_mipi_in: endpoint@0 {
-			reg = <0>;
-			remote-endpoint = <&dphy_rx0_out>;
-		};
-	};
-};
-
-&mipi_dphy_rx0 {
-	status = "okay";
-
-	ports {
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		port@0 {
-			reg = <0>;
-			#address-cells = <1>;
-			#size-cells = <0>;
-
-			mipi_in_ucam0: endpoint@1 {
-				reg = <1>;
-				remote-endpoint = <&ucam_out0>;
-				data-lanes = <1 2>;
-			};
-		};
-
-		port@1 {
-			reg = <1>;
-			#address-cells = <1>;
-			#size-cells = <0>;
-
-			dphy_rx0_out: endpoint@0 {
-				reg = <0>;
-				remote-endpoint = <&isp0_mipi_in>;
-			};
-		};
-	};
-};
-
-&isp0_mmu {
-	status = "okay";
-};
-
-&rkisp1_1 {
-	status = "disabled";
-
-	port {
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		isp1_mipi_in: endpoint@0 {
-			reg = <0>;
-			remote-endpoint = <&dphy_tx1rx1_out>;
-		};
-	};
-};
-
-&mipi_dphy_tx1rx1 {
-	status = "disabled";
-
-	ports {
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		port@0 {
-			reg = <0>;
-			#address-cells = <1>;
-			#size-cells = <0>;
-
-			mipi_in_ucam1: endpoint@1 {
-				reg = <1>;
-				/* Unlinked camera */
-				//remote-endpoint = <&ucam_out1>;
-				data-lanes = <1 2>;
-			};
-		};
-
-		port@1 {
-			reg = <1>;
-			#address-cells = <1>;
-			#size-cells = <0>;
-
-			dphy_tx1rx1_out: endpoint@0 {
-				reg = <0>;
-				remote-endpoint = <&isp1_mipi_in>;
-			};
-		};
-	};
-};
-
-&isp1_mmu {
-	status = "disabled";
+	phy-mode = "rgmii";
+	phy-handle = <&phy0>;
 };
 
 &pinctrl {
-	buttons {
-		pwrbtn: pwrbtn {
-			rockchip,pins = <0 5 RK_FUNC_GPIO &pcfg_pull_up>;
-		};
-	};
-
-	hdmiin {
-		hdmiin_gpios: hdmiin-gpios {
-			rockchip,pins =
-				<2 5 RK_FUNC_GPIO &pcfg_output_high>,
-				<2 6 RK_FUNC_GPIO &pcfg_output_high>,
-				<2 7 RK_FUNC_GPIO &pcfg_pull_none>,
-				<2 8 RK_FUNC_GPIO &pcfg_output_high>,
-				<2 9 RK_FUNC_GPIO &pcfg_output_high>,
-				<2 10 RK_FUNC_GPIO &pcfg_output_low>,
-				<2 12 RK_FUNC_GPIO &pcfg_pull_none>;
-		};
-	};
-    
-	xgpio_4d5_rs485_3a {
-		rs485_3a_4d5: rs485_3a-4d5 {
-			rockchip,pins = <4 29 RK_FUNC_GPIO &pcfg_pull_up>;
-		};
-	};
-	xgpio_4c5_rs485_4a {
-		rs485_4a_4c5: rs485_4a_4c5 {
-			rockchip,pins = <4 21 RK_FUNC_GPIO &pcfg_pull_up>;
-		};
-	}; 
-	
-	
-	xgpio_relay1 {
-		relay1_gpio: relay1-gpio {
-			rockchip,pins = <2 7 RK_FUNC_GPIO &pcfg_pull_up>;
-		};
-	};
-	  
-	xgpio_relay2 {
-		relay2_gpio: relay2-gpio {
-			rockchip,pins = <2 8 RK_FUNC_GPIO &pcfg_pull_up>;
-		};
-	};
-	
-	xgpio_fan {
-		fan_gpio: fan-gpio {
-			rockchip,pins = <1 18 RK_FUNC_GPIO &pcfg_pull_up>;
-		};
-	};
-	
-	xgpio_POWEN_3G {
-		power3g_gpio: power3g-gpio {
-			rockchip,pins = <1 13 RK_FUNC_GPIO &pcfg_pull_up>;
-		};
-	};
-    gpio2_a3 {
-		gpio2a3: gpio2-a3 {
-			rockchip,pins = <2 3 RK_FUNC_GPIO &pcfg_pull_up>;
-		};
-	};
-	
-	gpio2_a4 {
-		gpio2a4: gpio2-a4 {
-			rockchip,pins = <2 4 RK_FUNC_GPIO &pcfg_pull_up>;
-		};
-	};
-	gpio2_a5 {
-		gpio2a5: gpio2-a5{
-			rockchip,pins = <2 5 RK_FUNC_GPIO &pcfg_pull_up>;
-		};
-	};
-	
-    gpio2_a6 {
-		gpio2a6: gpio2-a6{
-			rockchip,pins = <2 6 RK_FUNC_GPIO &pcfg_pull_up>;
-		};
-	};	
-	RESET_4G{
-       gpio2d4: gpio2-d4{
-                       rockchip,pins = <2 28 RK_FUNC_GPIO &pcfg_pull_up>; 
-               };
-       
-      };
-       POWERON_4G{
-       gpio4d3: gpio4-d3{
-                       rockchip,pins = <4 27 RK_FUNC_GPIO &pcfg_pull_up>; 
-               };
-        
-       };
-       W_DISABLE1_4G{
-       gpio0a2: gpio0-a2{
-                       rockchip,pins = <0 2 RK_FUNC_GPIO &pcfg_pull_up>; 
-               };
-       
-       };
-
 	leds {
-		led1_ctl: led1-ctl {
-			rockchip,pins = <1 23 RK_FUNC_GPIO &pcfg_pull_up>;
+		led_act_pin: led-act-pin {
+			rockchip,pins = <0 13 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
-		led2_ctl: led2-ctl {
+	};
+
+	keys {
+		pwr_key_pin: pwr-key-pin {
 			rockchip,pins = <0 12 RK_FUNC_GPIO &pcfg_pull_up>;
-		};
-		led3_ctl: led3-ctl {
-			rockchip,pins = <1 1 RK_FUNC_GPIO &pcfg_pull_up>;
-		};
-		led4_ctl: led4-ctl {
-			rockchip,pins = <0 8 RK_FUNC_GPIO &pcfg_pull_up>;
 		};
 	};
 };
